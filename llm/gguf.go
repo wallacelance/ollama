@@ -489,6 +489,7 @@ func readGGUFArray(llm *gguf, r io.Reader) (*array, error) {
 	return a, nil
 }
 
+// writeGGUFArray writes a slice s of type E to the write with a gguf type of t
 func writeGGUFArray[S ~[]E, E any](w io.Writer, t uint32, s S) error {
 	if err := binary.Write(w, binary.LittleEndian, ggufTypeArray); err != nil {
 		return err
@@ -502,13 +503,7 @@ func writeGGUFArray[S ~[]E, E any](w io.Writer, t uint32, s S) error {
 		return err
 	}
 
-	for _, e := range s {
-		if err := binary.Write(w, binary.LittleEndian, e); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return binary.Write(w, binary.LittleEndian, s)
 }
 
 func WriteGGUF(ws io.WriteSeeker, kv KV, ts []*Tensor) error {
@@ -650,7 +645,6 @@ func ggufWriteTensorInfo(ws io.WriteSeeker, t *Tensor) error {
 
 func ggufWriteTensor(ws io.WriteSeeker, t *Tensor, alignment int64) error {
 	slog.Debug(t.Name, "kind", t.Kind, "shape", t.Shape, "offset", t.Offset)
-
 	offset, err := ws.Seek(0, io.SeekCurrent)
 	if err != nil {
 		return err
