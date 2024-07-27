@@ -26,10 +26,12 @@ func convertFull(t *testing.T, d string) (*os.File, llm.KV, llm.Tensors) {
 	}
 	defer f.Close()
 
+	fmt.Println("converting")
 	if err := Convert(d, f); err != nil {
 		t.Fatal(err)
 	}
 
+	fmt.Println("convert succeeded")
 	r, err := os.Open(f.Name())
 	if err != nil {
 		t.Fatal(err)
@@ -65,6 +67,7 @@ func TestConvertFull(t *testing.T) {
 		"Phi-3-mini-128k-instruct",
 		"all-MiniLM-L6-v2",
 		"gemma-2-9b-it",
+		"c4ai-command-r-v01",
 	}
 
 	for i := range cases {
@@ -79,6 +82,7 @@ func TestConvertFull(t *testing.T) {
 				t.Skipf("%s not found", p)
 			}
 
+			fmt.Println("Converting", tt)
 			f, kv, tensors := convertFull(t, p)
 			actual := make(map[string]string)
 			for k, v := range kv {

@@ -80,10 +80,12 @@ func Convert(path string, ws io.WriteSeeker) error {
 	}
 
 	var p Parameters
+	fmt.Println("unmarshalling")
 	if err := json.Unmarshal(bts, &p); err != nil {
 		return err
 	}
 
+	fmt.Println("checking architectures")
 	if len(p.Architectures) < 1 {
 		return errors.New("unknown architecture")
 	}
@@ -108,16 +110,19 @@ func Convert(path string, ws io.WriteSeeker) error {
 		return errors.New("unsupported architecture")
 	}
 
+	fmt.Printf("unmarshalling again for %#v", conv)
 	if err := json.Unmarshal(bts, conv); err != nil {
 		return err
 	}
 
+	fmt.Println("checking if moreParser")
 	if t, ok := conv.(moreParser); ok {
 		if err := t.parseMore(path); err != nil {
 			return err
 		}
 	}
 
+	fmt.Println("parsing tokenizer")
 	t, err := parseTokenizer(path, conv.specialTokenTypes())
 	if err != nil {
 		return err
@@ -134,10 +139,12 @@ func Convert(path string, ws io.WriteSeeker) error {
 		slog.Debug("vocabulary", "size", len(t.Vocabulary.Tokens))
 	}
 
+	fmt.Println("parsing tensors")
 	ts, err := parseTensors(path)
 	if err != nil {
 		return err
 	}
 
+	fmt.Println("writing file")
 	return conv.writeFile(ws, conv.KV(t), conv.Tensors(ts, conv.tensorName))
 }

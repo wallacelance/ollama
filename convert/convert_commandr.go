@@ -1,6 +1,7 @@
 package convert
 
 import (
+	"cmp"
 	"strings"
 
 	"github.com/ollama/ollama/llm"
@@ -17,8 +18,9 @@ type commandr struct {
 	LayerNormEPS            float32 `json:"layer_norm_eps"`
 	RopeTheta             float32 `json:"rope_theta"`
 	UseQKNorm		   bool `json:"use_qk_norm"`
-	ModelMaxLength 	  uint32  `json:"model_max_length"`
+	MaxLength 	  uint32  `json:"model_max_length"`
 	LogitScale 		  float32 `json:"logit_scale"`
+	NCtx 				uint32  `json:"n_ctx"`
 }
 
 var _ Converter = (*commandr)(nil)
@@ -27,18 +29,21 @@ func (p *commandr) KV(t *Tokenizer) llm.KV {
 	kv := p.Parameters.KV(t)
 	kv["general.architecture"] = "command-r"
 	kv["general.name"] = "command-r"
-	kv["command-r.context_length"] = p.MaxPositionEmbeddings
+	kv["command-r.context_length"] = cmp.Or(p.MaxLength, p.MaxPositionEmbeddings, p.NCtx)
 	kv["command-r.embedding_length"] = p.HiddenSize
 	kv["command-r.block_count"] = p.HiddenLayers
 	kv["command-r.feed_forward_length"] = p.IntermediateSize
 	kv["command-r.attention.head_count"] = p.NumAttentionHeads
 	kv["command-r.attention.head_count_kv"] = p.NumKeyValueHeads
-	kv["command-r.attention.layer_norm_eps"] = p.LayerNormEPS
-	
-	kv["tokenizer.ggml.eot_token_id"] = uint32(107)
-	kv["tokenizer.ggml.middle_token_id"] = uint32(68)
-	kv["tokenizer.ggml.prefix_token_id"] = uint32(67)
-	kv["tokenizer.ggml.suffix_token_id"] = uint32(69)
+	kv["command-r.attention.layer_norm_epsilon"] = p.LayerNormEPS
+	kv["command-r.rope.freq_base"] = p.RopeTheta
+	kv["command-r.max_position_embeddings"] = cmp.Or(p.MaxLength, p.MaxPositionEmbeddings)
+	kv["command-r.logit_scale"] = p.LogitScale
+	kv["command-r.rope.scaling.type"] = "none"
+
+	if len(t.Merges) > 0 {
+		kv["tokenizer.ggml.merges"] = t.Merges
+	}
 
 	return kv
 }
@@ -60,20 +65,18 @@ func (p *commandr) Tensors(ts []Tensor, nameFunc NameFunc) []*llm.Tensor {
 
 func (p *commandr) tensorName(n string) string {
 	return strings.NewReplacer(
-		"lm_head", "output",
-		"model.embed_tokens", "token_embd",
-		"model.norm", "output_norm",
+		"self_attn.q_norm", "attn_q_norm",
+		"self_attn.k_norm", "attn_k_norm",
 		"model.layers", "blk",
 		"input_layernorm", "attn_norm",
-		"self_attn.q_proj", "attn_q",
-		"self_attn.k_proj", "attn_k",
-		"self_attn.v_proj", "attn_v",
-		"self_attn.o_proj", "attn_output",
-		"mlp.gate_proj", "ffn_gate",
 		"mlp.down_proj", "ffn_down",
+		"mlp.gate_proj", "ffn_gate",
 		"mlp.up_proj", "ffn_up",
-		"post_attention_layernorm", "ffn_norm",
-		// mixtral
-		"block_sparse_moe.gate", "ffn_gate_inp",
+		"self_attn.k_proj", "attn_k",
+		"self_attn.o_proj", "attn_output",
+		"self_attn.q_proj", "attn_q",
+		"self_attn.v_proj", "attn_v",
+		"model.norm", "output_norm",
+		"model.embed_tokens", "token_embd",
 	).Replace(n)
 }

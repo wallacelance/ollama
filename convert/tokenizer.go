@@ -34,6 +34,7 @@ type Tokenizer struct {
 }
 
 func parseTokenizer(d string, specialTokenTypes []string) (*Tokenizer, error) {
+	fmt.Println("parseVocab")
 	v, err := parseVocabulary(d)
 	if err != nil {
 		return nil, err
@@ -43,7 +44,7 @@ func parseTokenizer(d string, specialTokenTypes []string) (*Tokenizer, error) {
 		Vocabulary: v,
 		Pre:        "default",
 	}
-
+	fmt.Println("made tokenizer", t)
 	addedTokens := make(map[string]token)
 	if f, err := os.Open(filepath.Join(d, "tokenizer.json")); errors.Is(err, os.ErrNotExist) {
 	} else if err != nil {
@@ -99,10 +100,16 @@ func parseTokenizer(d string, specialTokenTypes []string) (*Tokenizer, error) {
 			return nil, err
 		}
 
+		var chatTemplates []map[string]interface{}
 		if template, ok := p["chat_template"]; ok {
-			if err := json.Unmarshal(template, &t.Template); err != nil {
-				return nil, err
+			if err := json.Unmarshal(template, &chatTemplates); err != nil {
+				if err := json.Unmarshal(template, &t.Template); err != nil {
+					return nil, err
+				}
+			} else {
+				t.Template = chatTemplates[0]["template"].(string)
 			}
+			fmt.Println("chat_template", t.Template)
 		}
 
 		for _, st := range specialTokenTypes {
