@@ -62,7 +62,7 @@ After it is working, if you have created an account on [ollama.com](https://olla
 $ ollama push <user name>/<model name>
 ```
 
-## From a GGUF based model
+## Importing a GGUF based model
 
 If you have a GGUF based model it is possible to import it into Ollama. You can obtain a GGUF model by:
 
