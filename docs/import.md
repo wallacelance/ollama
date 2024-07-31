@@ -1,49 +1,71 @@
-# Import
 
-GGUF models and select Safetensors models can be imported directly into Ollama.
+# Importing a model
 
-## Import GGUF
+You can import a model into Ollama;
 
-A binary GGUF file can be imported directly into Ollama through a Modelfile.
+  * From Safetensors weights; or
 
-```dockerfile
-FROM /path/to/file.gguf
-```
+  * From a GGUF file
 
-## Import Safetensors
+## Importing from Safetensors weights
 
-If the model being imported is one of these architectures, it can be imported directly into Ollama through a Modelfile:
+Importing your model directly from the Safetensors weights is the easiest way to
+import a model. Ollama supports importing several different architectures including:
 
- - LlamaForCausalLM
- - MistralForCausalLM
- - GemmaForCausalLM
+  * Llama (including Llama 2, Llama 3, and Llama 3.1);
+  * Mistral (including Mistral 1, Mistral 2, and Mixtral); and
+  * Gemma (including Gemma 1 and Gemma 2)
+
+This includes importing either the foundation model as well as any fine tuned model which
+is based upon one of these architectures.
+
+To import a model, create a Modelfile using a text editor which includes a `FROM`
+line which points to the directory with the model weights.
 
 ```dockerfile
 FROM /path/to/safetensors/directory
 ```
 
-For architectures not directly convertable by Ollama, see llama.cpp's [guide](https://github.com/ggerganov/llama.cpp/blob/master/README.md#prepare-and-quantize) on conversion. After conversion, see [Import GGUF](#import-gguf).
+If you create the Modelfile in the same directory as the weights, you can use the line `FROM .`.
 
-## Automatic Quantization
+After you have created the Modelfile, use the command:
 
-> [!NOTE]
-> Automatic quantization requires v0.1.35 or higher.
+```bash
+$ ollama create -f Modelfile <model name>
+```
 
-Ollama is capable of quantizing FP16 or FP32 models to any of the supported quantizations with the `-q/--quantize` flag in `ollama create`.
+If the model architecture of your weights is supported, Ollama will take a few
+moments to import the weights. It will also attempt to find the correct _chat template_
+inside the model's configuration data. You can override the template using the `TEMPLATE`
+command in your Modelfile.
+
+If you have created an account on [ollama.com](https://ollama.com) you can call
+the name of the model `<user name>/<model name>` (e.g. jmorganca/mymodel) which will allow
+you to push your model to ollama.com so that other users can run it using the command
+`ollama run <user name/model name>`.
+
+## From a GGUF based model
+
+If you have a GGUF based model it is possible to import it into Ollama. You can obtain
+a GGUF model by:
+
+  * Converting a Safetensors model with the `convert_hf_to_gguf.py` from Llama.cpp; or
+
+  * Downloading a model from a place such as HuggingFace
+
+To import the GGUF file, create a Modelfile:
 
 ```dockerfile
-FROM /path/to/my/gemma/f16/model
+FROM /path/to/file.gguf
 ```
 
-```shell
-$ ollama create -q Q4_K_M mymodel
-transferring model data
-quantizing F16 model to Q4_K_M
-creating new layer sha256:735e246cc1abfd06e9cdcf95504d6789a6cd1ad7577108a70d9902fef503c1bd
-creating new layer sha256:0853f0ad24e5865173bbf9ffcc7b0f5d56b66fd690ab1009867e45e7d2c4db0f
-writing manifest
-success
-```
+## Quantizing a Model
+
+Quantizing a model allows you to run models faster and with less memory consumption but at
+reduced accuracy. This allows you to run a model on more modest hardware.
+
+Ollama can quantize FP16 and FP32 based models into different quantization levels using
+the `-q/--quantize` flag with the `ollama create` command.
 
 ### Supported Quantizations
 
@@ -64,25 +86,21 @@ success
 - `Q5_K_M`
 - `Q6_K`
 
-## Template Detection
-
-> [!NOTE]
-> Template detection requires v0.1.42 or higher.
-
-Ollama uses model metadata, specifically `tokenizer.chat_template`, to automatically create a template appropriate for the model you're importing.
+First, create a Modelfile with the FP16 or FP32 based model you wish to quantize.
 
 ```dockerfile
-FROM /path/to/my/gemma/model
+FROM /path/to/my/gemma/f16/model
 ```
 
+Use `ollama create` to then create the quantized model.
+
 ```shell
-$ ollama create mymodel
+$ ollama create -q Q4_K_M mymodel
 transferring model data
-using autodetected template gemma-instruct
-creating new layer sha256:baa2a0edc27d19cc6b7537578a9a7ba1a4e3214dc185ed5ae43692b319af7b84
-creating new layer sha256:ba66c3309914dbef07e5149a648fd1877f030d337a4f240d444ea335008943cb
+quantizing F16 model to Q4_K_M
+creating new layer sha256:735e246cc1abfd06e9cdcf95504d6789a6cd1ad7577108a70d9902fef503c1bd
+creating new layer sha256:0853f0ad24e5865173bbf9ffcc7b0f5d56b66fd690ab1009867e45e7d2c4db0f
 writing manifest
 success
 ```
 
-Defining a template in the Modelfile will disable this feature which may be useful if you want to use a different template than the autodetected one.
