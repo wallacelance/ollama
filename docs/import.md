@@ -1,26 +1,32 @@
 
 # Importing a model
 
-You can import a model into Ollama;
+You can import a model into Ollama:
 
   * From Safetensors weights; or
-
   * From a GGUF file
 
-## Importing from Safetensors weights
+## Importing from Safetensors
 
-Importing your model directly from the Safetensors weights is the easiest way to
-import a model. Ollama supports importing several different architectures including:
+Importing your model directly from the Safetensors weights is the easiest way to import a model. Ollama supports importing several different architectures including:
 
   * Llama (including Llama 2, Llama 3, and Llama 3.1);
   * Mistral (including Mistral 1, Mistral 2, and Mixtral); and
   * Gemma (including Gemma 1 and Gemma 2)
 
-This includes importing either the foundation model as well as any fine tuned model which
-is based upon one of these architectures.
+This includes importing either the foundation model as well as any fine tuned model which is based upon one of these architectures.
 
-To import a model, create a Modelfile using a text editor which includes a `FROM`
-line which points to the directory with the model weights.
+
+Importing a model requires three steps:
+
+  1. Write a Modelfile
+  2. Create your model with `ollama create my-model`
+  3. Test your model with `ollama run my-model`
+
+
+#### Writing a Modelfile
+
+Create a Modelfile using a text editor which includes a `FROM` line which points to the directory with the model weights.
 
 ```dockerfile
 FROM /path/to/safetensors/directory
@@ -28,29 +34,39 @@ FROM /path/to/safetensors/directory
 
 If you create the Modelfile in the same directory as the weights, you can use the line `FROM .`.
 
+You can include other settings in your Modelfile such as parameters for the model, the desired chat template, the system prompt, and any license information. Refer to the [Modelfile documentation](https://github.com/ollama/ollama/blob/main/docs/modelfile.md) for more information about Modelfile commands.
+
+#### Create your model with `ollama create`
+
 After you have created the Modelfile, use the command:
 
 ```bash
 $ ollama create -f Modelfile <model name>
 ```
 
-If the model architecture of your weights is supported, Ollama will take a few
-moments to import the weights. It will also attempt to find the correct _chat template_
-inside the model's configuration data. You can override the template using the `TEMPLATE`
-command in your Modelfile.
+If the model architecture of your weights is supported, Ollama will take a few moments to import the weights. It will also attempt to find the correct _chat template_ inside the model's configuration data. You can override the template using the `TEMPLATE` command in your Modelfile.
 
-If you have created an account on [ollama.com](https://ollama.com) you can call
-the name of the model `<user name>/<model name>` (e.g. jmorganca/mymodel) which will allow
-you to push your model to ollama.com so that other users can run it using the command
-`ollama run <user name/model name>`.
+#### Test your model with `ollama run`
+
+Once you have created a model, you can run it using the command:
+
+```bash
+$ ollama run <model name>
+```
+
+This will load the newly created model into memory and you can test to make certain that it's working correctly. You may have to make changes to your Modelfile and run the `ollama create` command again in order to get everything correct.
+
+After it is working, if you have created an account on [ollama.com](https://ollama.com), you can push your model to [ollama.com](https://ollama.com) to share it with other people. Use the name `<user name>/<model name>` (e.g. `jmorganca/my-model`) when you are creating the model, or use the `ollama cp` command to name the model with your user name at the beginning of the model name. You can then push the model using the command:
+
+```bash
+$ ollama push <user name>/<model name>
+```
 
 ## From a GGUF based model
 
-If you have a GGUF based model it is possible to import it into Ollama. You can obtain
-a GGUF model by:
+If you have a GGUF based model it is possible to import it into Ollama. You can obtain a GGUF model by:
 
   * Converting a Safetensors model with the `convert_hf_to_gguf.py` from Llama.cpp; or
-
   * Downloading a model from a place such as HuggingFace
 
 To import the GGUF file, create a Modelfile:
@@ -59,13 +75,14 @@ To import the GGUF file, create a Modelfile:
 FROM /path/to/file.gguf
 ```
 
+Not all models in GGUF format will work with Ollama.
+
+
 ## Quantizing a Model
 
-Quantizing a model allows you to run models faster and with less memory consumption but at
-reduced accuracy. This allows you to run a model on more modest hardware.
+Quantizing a model allows you to run models faster and with less memory consumption but at reduced accuracy. This allows you to run a model on more modest hardware.
 
-Ollama can quantize FP16 and FP32 based models into different quantization levels using
-the `-q/--quantize` flag with the `ollama create` command.
+Ollama can quantize FP16 and FP32 based models into different quantization levels using the `-q/--quantize` flag with the `ollama create` command.
 
 ### Supported Quantizations
 
