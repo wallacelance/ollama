@@ -79,8 +79,7 @@ func Quantize(infile, outfile string, ftype fileType, fn func(resp api.ProgressR
 	}()
 
 	if rc := C.llama_model_quantize(cinfile, coutfile, &params); rc != 0 {
-		return fmt.Errorf("llama_model_quantize: %d", rc)
-	}
+		return fmt.Errorf("failed to quantize model. This model architecture may not be supported, or you may need to upgrade Ollama to the latest version")	}
 
 	return nil
 }
